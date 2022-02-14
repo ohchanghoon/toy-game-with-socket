@@ -28,4 +28,13 @@ export class Player {
       ? this.attackDamage * 0.5 * 3
       : this.attackDamage * 0.5;
   }
+
+  // 강공격 & 잽 (한번의 요청으로 강공격과 잽이 순차적으로 실행되어야합니다.) 사용가능 횟수 3
+  specialMove() {
+    if (!this.specialMoveCnt) return false;
+    this.chargedAttackCnt += 1;
+    this.jabCnt += 1;
+    this.specialMoveCnt -= 1;
+    return true;
+  }
 }
