@@ -10,4 +10,13 @@ export class Player {
   specialMoveCnt = 3;
   healCnt = 8;
   defenseCnt = 5;
+
+  // 기본공격력 x 2.5, 사용가능 횟수 5
+  chargedAttack() {
+    if (!this.chargedAttackCnt) return false;
+    this.chargedAttackCnt -= 1;
+    return Math.random() < this.critChance
+      ? this.attackDamage * 0.5 * 2
+      : this.attackDamage * 0.5;
+  }
 }
