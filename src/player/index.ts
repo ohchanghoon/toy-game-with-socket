@@ -37,4 +37,12 @@ export class Player {
     this.specialMoveCnt -= 1;
     return true;
   }
+
+  // 현재 체력 +20 ~ +50, 사용가능 횟수 8
+  heal() {
+    if (!this.healCnt) return false;
+    this.health += Math.floor(Math.random() * 31) + 20;
+    this.healCnt -= 1;
+    return true;
+  }
 }
