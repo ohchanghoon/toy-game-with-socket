@@ -32,17 +32,29 @@ export class Player {
   // 강공격 & 잽 (한번의 요청으로 강공격과 잽이 순차적으로 실행되어야합니다.) 사용가능 횟수 3
   specialMove() {
     if (!this.specialMoveCnt) return false;
+    this.specialMoveCnt -= 1;
     this.chargedAttackCnt += 1;
     this.jabCnt += 1;
-    this.specialMoveCnt -= 1;
     return true;
   }
 
   // 현재 체력 +20 ~ +50, 사용가능 횟수 8
   heal() {
     if (!this.healCnt) return false;
-    this.health += Math.floor(Math.random() * 31) + 20;
     this.healCnt -= 1;
+    this.health += Math.floor(Math.random() * 31) + 20;
+    return true;
+  }
+
+  // 10초간 방어 2배, 사용가능 횟수 5
+  defense() {
+    if (!this.defenseCnt) return false;
+    this.defenseCnt -= 1;
+    this.armor *= 2;
+
+    setTimeout(() => {
+      this.armor /= 2;
+    }, 1000);
     return true;
   }
 }
