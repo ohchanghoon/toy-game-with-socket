@@ -19,4 +19,13 @@ export class Player {
       ? this.attackDamage * 0.5 * 2
       : this.attackDamage * 0.5;
   }
+
+  // 기본공격력 x 0.5 적용과 이번 공격만 크리티컬 확률 3배, 사용가능 횟수 10
+  jab() {
+    if (!this.jabCnt) return false;
+    this.jabCnt -= 1;
+    return Math.random() < 0.3
+      ? this.attackDamage * 0.5 * 3
+      : this.attackDamage * 0.5;
+  }
 }
