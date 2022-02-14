@@ -11,6 +11,11 @@ export class Player {
   healCnt = 8;
   defenseCnt = 5;
 
+  // 1초당 자동 1회 공격
+  autoAttack() {
+    //
+  }
+
   // 기본공격력 x 2.5, 사용가능 횟수 5
   chargedAttack() {
     if (!this.chargedAttackCnt) return false;
@@ -56,5 +61,10 @@ export class Player {
       this.armor /= 2;
     }, 1000);
     return true;
+  }
+
+  damaged(damage: number): number {
+    this.health -= damage - this.armor;
+    return this.health;
   }
 }
