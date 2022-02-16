@@ -49,10 +49,7 @@ export class BattleGameService {
   }
 
   specialMove(name) {
-    //
-    const chatgedAttackDamage = this.playerList[name].player.chargedAttack();
-    const jabDamage = this.playerList[name].player.chargedAttack();
-    console.log(chatgedAttackDamage, jabDamage);
+    return this.playerList[name].player.specialMove();
   }
 
   damaged(target, damage) {

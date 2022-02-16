@@ -36,6 +36,7 @@ export class BattleGameGateway {
     const { name } = client.data;
 
     const chargedAttack = this.battleGameService.chargedAttack(name);
+
     if (!chargedAttack.result) client.emit('charged-attack', chargedAttack);
     else {
       const health = this.battleGameService.damaged(
@@ -61,6 +62,7 @@ export class BattleGameGateway {
     const { name } = client.data;
 
     const jabAttack = this.battleGameService.jab(name);
+
     if (!jabAttack.result) client.emit('jab', jabAttack);
     else {
       const health = this.battleGameService.damaged(target, jabAttack.damage);
@@ -78,9 +80,15 @@ export class BattleGameGateway {
 
   @SubscribeMessage('special-move')
   specialMove(client: Socket) {
-    const { target } = client.data;
     const { name } = client.data;
-
     const result = this.battleGameService.specialMove(name);
+
+    if (!result) {
+      client.emit('special-move', { result: false, msg: '스킬 횟수 초과' });
+    } else {
+      this.server.emit('special-move', { result: false, msg: '필살기 성공' });
+      this.chargedAttack(client);
+      this.jab(client);
+    }
   }
 }
