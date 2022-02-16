@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BattleGameModule } from './battle-game/battle-game.module';
-import { BattleGameGateway } from './battle-game/battle-game.gateway';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
-  imports: [BattleGameModule],
+  imports: [BattleGameModule, ChatModule],
   controllers: [AppController],
-  providers: [AppService, BattleGameGateway],
+  providers: [AppService],
 })
 export class AppModule {}
