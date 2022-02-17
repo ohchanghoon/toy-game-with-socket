@@ -37,23 +37,20 @@ export class BattleGameGateway {
 
     const chargedAttack = this.battleGameService.chargedAttack(name);
 
-    if (!chargedAttack.result) client.emit('charged-attack', chargedAttack);
-    else {
-      const health = this.battleGameService.damaged(
-        target,
-        chargedAttack.damage,
-      );
-      const result = resultForm(
-        'charged-attack',
-        chargedAttack.result,
-        '강 공격 성공',
-        health,
-        chargedAttack.count,
-        chargedAttack.damage,
-      );
-
-      this.server.emit('charged-attack', result);
+    if (!chargedAttack.result) {
+      return client.emit('charged-attack', chargedAttack);
     }
+    const health = this.battleGameService.damaged(target, chargedAttack.damage);
+    const result = resultForm(
+      'charged-attack',
+      chargedAttack.result,
+      '강 공격 성공',
+      health,
+      chargedAttack.count,
+      chargedAttack.damage,
+    );
+
+    this.server.emit('charged-attack', result);
   }
 
   @SubscribeMessage('jab')
@@ -63,19 +60,17 @@ export class BattleGameGateway {
 
     const jabAttack = this.battleGameService.jab(name);
 
-    if (!jabAttack.result) client.emit('jab', jabAttack);
-    else {
-      const health = this.battleGameService.damaged(target, jabAttack.damage);
-      const result = resultForm(
-        'jab',
-        jabAttack.result,
-        '잽 공격 성공',
-        health,
-        jabAttack.count,
-        jabAttack.damage,
-      );
-      this.server.emit('jab', result);
-    }
+    if (!jabAttack.result) return client.emit('jab', jabAttack);
+    const health = this.battleGameService.damaged(target, jabAttack.damage);
+    const result = resultForm(
+      'jab',
+      jabAttack.result,
+      '잽 공격 성공',
+      health,
+      jabAttack.count,
+      jabAttack.damage,
+    );
+    this.server.emit('jab', result);
   }
 
   @SubscribeMessage('special-move')
@@ -84,11 +79,49 @@ export class BattleGameGateway {
     const result = this.battleGameService.specialMove(name);
 
     if (!result) {
-      client.emit('special-move', { result: false, msg: '스킬 횟수 초과' });
-    } else {
-      this.server.emit('special-move', { result: false, msg: '필살기 성공' });
-      this.chargedAttack(client);
-      this.jab(client);
+      return client.emit('special-move', {
+        result: false,
+        msg: '스킬 횟수 초과',
+      });
     }
+    this.server.emit('special-move', { result: false, msg: '필살기 성공' });
+    this.chargedAttack(client);
+    this.jab(client);
+  }
+
+  @SubscribeMessage('heal')
+  heal(client: Socket) {
+    const { name } = client.data;
+    const heal = this.battleGameService.heal(name);
+
+    if (!heal.result) {
+      return client.emit('heal', { result: false, msg: '스킬 횟수 초과' });
+    }
+    const result = resultForm(
+      'heal',
+      heal.result,
+      `${name} 체력 회복 성공`,
+      heal.health,
+      heal.count,
+    );
+    this.server.emit('heal', result);
+  }
+
+  @SubscribeMessage('defense')
+  defense(client: Socket) {
+    const { name } = client.data;
+    const defense = this.battleGameService.defense(name);
+
+    if (!defense.result) {
+      return client.emit('defense', { result: false, msg: '스킬 횟수 초과' });
+    }
+    const result = resultForm(
+      'defense',
+      defense.result,
+      '방어 성공',
+      defense.health,
+      defense.count,
+    );
+    this.server.emit('defense', result);
   }
 }

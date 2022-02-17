@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { Player } from 'src/player';
+import { PlayerListDto } from './playerList.dto';
 
 @Injectable()
 export class BattleGameService {
-  playerList = {};
+  playerList: Record<string, PlayerListDto> = {};
 
   createPlayer(client: Socket, name: string) {
     const player = new Player();
@@ -50,6 +51,22 @@ export class BattleGameService {
 
   specialMove(name) {
     return this.playerList[name].player.specialMove();
+  }
+
+  heal(name) {
+    const result = this.playerList[name].player.heal();
+    const health = this.playerList[name].player.health;
+    const count = this.playerList[name].player.healCnt;
+
+    return { result, health, count };
+  }
+
+  defense(name) {
+    const result = this.playerList[name].player.defense();
+    const health = this.playerList[name].player.health;
+    const count = this.playerList[name].player.defenseCnt;
+
+    return { result, health, count };
   }
 
   damaged(target, damage) {

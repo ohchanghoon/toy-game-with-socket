@@ -4,7 +4,7 @@ export function resultForm(
   message: string,
   health: number,
   count: number,
-  damage: number,
+  damage?: number,
 ) {
   return {
     attackType,
