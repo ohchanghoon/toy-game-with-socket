@@ -1,33 +1,92 @@
 import {
+  OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server } from 'http';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { BattleGameService } from './battle-game.service';
 import { resultForm } from './resultForm';
 
 @WebSocketGateway()
-export class BattleGameGateway {
+export class BattleGameGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   constructor(private battleGameService: BattleGameService) {}
 
   @WebSocketServer()
   server: Server;
-  handleConnection(client: Socket) {
+  handleConnection(client: Socket, ...args: any[]) {
     const name = client.handshake.query['name'] as string;
     client.data.name = name;
-    client.leave(client.id);
+    client.rooms.clear();
 
     const player = this.battleGameService.createPlayer(client, name);
     this.server.emit('player-info', player);
   }
 
+  handleDisconnect(client: any) {
+    delete this.battleGameService.playerList[client.data.name];
+  }
+
   @SubscribeMessage('battle-request')
   battle(client: Socket, message) {
     const { target } = message;
-    const msg = this.battleGameService.declarationBattle(client, target);
+    const targetClient = this.server.sockets.sockets.get(
+      this.battleGameService.playerList[target].client,
+    );
+    const msg = this.battleGameService.declarationBattle(client, targetClient);
     client.emit('battle-request', msg);
+  }
+
+  autoAttack(client: Socket) {
+    const { target } = client.data;
+    const { name } = client.data;
+
+    const interval = setInterval(() => {
+      if (
+        typeof this.battleGameService.playerList[client.data.name] ===
+        'undefined'
+      ) {
+        clearInterval(interval);
+        return;
+      } else {
+        const damage1 = this.battleGameService.autoAttack(name);
+        const damage2 = this.battleGameService.autoAttack(target);
+        const health1 = this.battleGameService.damaged(target, damage1);
+        const health2 = this.battleGameService.damaged(name, damage2);
+
+        const result1 = resultForm(
+          'auto-attack',
+          true,
+          '기본 공격 성공',
+          health1,
+          undefined,
+          damage1,
+        );
+        const result2 = resultForm(
+          'auto-attack',
+          true,
+          '기본 공격 성공',
+          health2,
+          undefined,
+          damage2,
+        );
+        this.server.to(client.data.roomId).emit('battle-message', result1);
+        this.server.to(client.data.roomId).emit('battle-message', result2);
+        if (health1 <= 0 && health2 <= 0) {
+          this.battleEnd(name, target, 'tie');
+          clearInterval(interval);
+        } else if (health1 <= 0) {
+          this.battleEnd(name, target, name);
+          clearInterval(interval);
+        } else if (health2 <= 0) {
+          this.battleEnd(name, target, target);
+          clearInterval(interval);
+        }
+      }
+    }, 1000);
   }
 
   @SubscribeMessage('charged-attack')
@@ -50,13 +109,15 @@ export class BattleGameGateway {
       chargedAttack.damage,
     );
 
-    this.server.emit('charged-attack', result);
+    this.server.to(client.data.roomId).emit('battle-message', result);
+    if (health <= 0) this.battleEnd(name, target, name);
   }
 
   @SubscribeMessage('jab')
   jab(client: Socket) {
     const { target } = client.data;
     const { name } = client.data;
+    console.log('target : ', client.data);
 
     const jabAttack = this.battleGameService.jab(name);
 
@@ -70,7 +131,8 @@ export class BattleGameGateway {
       jabAttack.count,
       jabAttack.damage,
     );
-    this.server.emit('jab', result);
+    this.server.to(client.data.roomId).emit('battle-message', result);
+    if (health <= 0) this.battleEnd(name, target, name);
   }
 
   @SubscribeMessage('special-move')
@@ -84,7 +146,9 @@ export class BattleGameGateway {
         msg: '스킬 횟수 초과',
       });
     }
-    this.server.emit('special-move', { result: false, msg: '필살기 성공' });
+    this.server
+      .to(client.data.roomId)
+      .emit('battle-message', { result: true, msg: '필살기 성공' });
     this.chargedAttack(client);
     this.jab(client);
   }
@@ -104,7 +168,7 @@ export class BattleGameGateway {
       heal.health,
       heal.count,
     );
-    this.server.emit('heal', result);
+    this.server.to(client.data.roomId).emit('battle-message', result);
   }
 
   @SubscribeMessage('defense')
@@ -122,6 +186,28 @@ export class BattleGameGateway {
       defense.health,
       defense.count,
     );
-    this.server.emit('defense', result);
+    this.server.to(client.data.roomId).emit('battle-message', result);
+  }
+
+  battleEnd(clientA: string, clientB: string, winner: string) {
+    const socketA = this.server.sockets.sockets.get(
+      this.battleGameService.playerList[clientA].client,
+    );
+    const socketB = this.server.sockets.sockets.get(
+      this.battleGameService.playerList[clientB].client,
+    );
+    if (socketA.data.roomId || socketB.data.roomId) {
+      this.server.emit('battle-end', {
+        winner,
+        message: 'battle end',
+      });
+
+      socketA.rooms.clear();
+      socketB.rooms.clear();
+      delete socketA.data.roomId;
+      delete socketB.data.roomId;
+      delete socketA.data.target;
+      delete socketB.data.target;
+    }
   }
 }

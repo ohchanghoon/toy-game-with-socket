@@ -3,7 +3,7 @@ export function resultForm(
   result: boolean,
   message: string,
   health: number,
-  count: number,
+  count?: number,
   damage?: number,
 ) {
   return {

@@ -13,7 +13,9 @@ export class Player {
 
   // 1초당 자동 1회 공격
   autoAttack() {
-    //
+    return Math.random() < this.critChance
+      ? this.attackDamage * 2
+      : this.attackDamage;
   }
 
   // 기본공격력 x 2.5, 사용가능 횟수 5

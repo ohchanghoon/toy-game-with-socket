@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { Player } from 'src/player';
 import { PlayerListDto } from './playerList.dto';
+import { v4 } from 'uuid';
 
 @Injectable()
 export class BattleGameService {
@@ -16,7 +17,9 @@ export class BattleGameService {
     return player;
   }
 
-  declarationBattle(client: Socket, target: string) {
+  declarationBattle(client: Socket, targetClient: Socket) {
+    const target = targetClient.data.name;
+
     const msg = {
       sender: client.data.name,
       recipient: target,
@@ -24,13 +27,40 @@ export class BattleGameService {
       isBattleAccept: false,
     };
 
+    if (client.rooms.size) {
+      msg.message = `${client.data.name} is fighting`;
+      return msg;
+    }
+    if (targetClient.rooms.size) {
+      msg.message = `${target} is fighting`;
+      return msg;
+    }
     if (this.playerList[target] === undefined) {
       msg.message = `can not find player ${target}`;
       return msg;
     }
     client.data.target = target;
     this.playerList[client.data.name].target = target;
-    return this.playerList;
+
+    if (this.playerList[target].target === client.data.name) {
+      this.joinRoom(client, targetClient);
+      msg.message = 'battle start';
+      msg.isBattleAccept = true;
+      return msg;
+    }
+    return msg;
+  }
+
+  joinRoom(client: Socket, targetClient: Socket) {
+    const roomId = v4();
+    client.join(roomId);
+    targetClient.join(roomId);
+    client.data.roomId = roomId;
+    client.data.targetClient = roomId;
+  }
+
+  autoAttack(name) {
+    return this.playerList[name].player.autoAttack();
   }
 
   chargedAttack(name) {
@@ -70,6 +100,8 @@ export class BattleGameService {
   }
 
   damaged(target, damage) {
+    console.log(target, damage);
+
     return this.playerList[target].player.damaged(damage);
   }
 }
