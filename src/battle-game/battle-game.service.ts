@@ -11,7 +11,6 @@ export class BattleGameService {
   createPlayer(client: Socket, name: string) {
     const player = new Player();
     client.data.name = name;
-    console.log(client.data);
 
     this.playerList[name] = { client: client.id, player };
     return player;
@@ -100,8 +99,6 @@ export class BattleGameService {
   }
 
   damaged(target, damage) {
-    console.log(target, damage);
-
     return this.playerList[target].player.damaged(damage);
   }
 }

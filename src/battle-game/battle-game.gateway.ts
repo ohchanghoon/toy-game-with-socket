@@ -38,6 +38,9 @@ export class BattleGameGateway
     );
     const msg = this.battleGameService.declarationBattle(client, targetClient);
     client.emit('battle-request', msg);
+    if (msg.isBattleAccept) {
+      this.autoAttack(client);
+    }
   }
 
   autoAttack(client: Socket) {
@@ -97,7 +100,7 @@ export class BattleGameGateway
     const chargedAttack = this.battleGameService.chargedAttack(name);
 
     if (!chargedAttack.result) {
-      return client.emit('charged-attack', chargedAttack);
+      return client.emit('battle-message', chargedAttack);
     }
     const health = this.battleGameService.damaged(target, chargedAttack.damage);
     const result = resultForm(
@@ -117,11 +120,10 @@ export class BattleGameGateway
   jab(client: Socket) {
     const { target } = client.data;
     const { name } = client.data;
-    console.log('target : ', client.data);
 
     const jabAttack = this.battleGameService.jab(name);
 
-    if (!jabAttack.result) return client.emit('jab', jabAttack);
+    if (!jabAttack.result) return client.emit('battle-message', jabAttack);
     const health = this.battleGameService.damaged(target, jabAttack.damage);
     const result = resultForm(
       'jab',
@@ -141,7 +143,7 @@ export class BattleGameGateway
     const result = this.battleGameService.specialMove(name);
 
     if (!result) {
-      return client.emit('special-move', {
+      return client.emit('battle-message', {
         result: false,
         msg: '스킬 횟수 초과',
       });
@@ -159,7 +161,10 @@ export class BattleGameGateway
     const heal = this.battleGameService.heal(name);
 
     if (!heal.result) {
-      return client.emit('heal', { result: false, msg: '스킬 횟수 초과' });
+      return client.emit('battle-message', {
+        result: false,
+        msg: '스킬 횟수 초과',
+      });
     }
     const result = resultForm(
       'heal',
@@ -177,7 +182,10 @@ export class BattleGameGateway
     const defense = this.battleGameService.defense(name);
 
     if (!defense.result) {
-      return client.emit('defense', { result: false, msg: '스킬 횟수 초과' });
+      return client.emit('battle-message', {
+        result: false,
+        msg: '스킬 횟수 초과',
+      });
     }
     const result = resultForm(
       'defense',
